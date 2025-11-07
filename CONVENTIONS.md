@@ -13,3 +13,6 @@ js promise : this.call['Class.method'](args)
 
 JRPC-OO response :
 The return value is an object of {remote UUID : return data, ... }. utils.js function extractResponseData returns the data from the first UUID, as well as data for other forms.
+
+Store each class in its own js file, e.g. Test.js has the code for the class Test in it.
+In the webapp, the kebab-case file name webapp/track-play.js imports TrackPlay and does customElements.define, however webapp/src/TrackPlay.js has the class's code in it.
