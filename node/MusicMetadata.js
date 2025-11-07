@@ -1,5 +1,6 @@
 import * as mm from 'music-metadata';
 import fs from 'fs';
+import path from 'path';
 
 // Wrapper class for music-metadata to expose its methods via JRPC
 class MusicMetadata {
@@ -71,6 +72,62 @@ class MusicMetadata {
         success: false,
         error: error.message
       };
+    }
+  }
+
+  // Recursively parse a directory and return all track metadata
+  async parseDirectory(directoryPath, options = {}) {
+    try {
+      const tracks = [];
+      await this._parseDirectoryRecursive(directoryPath, tracks, options);
+      return {
+        success: true,
+        tracks: tracks,
+        count: tracks.length
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  // Helper method to recursively parse directories
+  async _parseDirectoryRecursive(dirPath, tracks, options) {
+    const supportedExtensions = [
+      '.mp3', '.mp4', '.m4a', '.m4v', '.aac',
+      '.flac', '.ogg', '.opus', '.wav', '.wma',
+      '.ape', '.mpc', '.wv', '.tta'
+    ];
+
+    const entries = await fs.promises.readdir(dirPath, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const fullPath = path.join(dirPath, entry.name);
+
+      if (entry.isDirectory()) {
+        await this._parseDirectoryRecursive(fullPath, tracks, options);
+      } else if (entry.isFile()) {
+        const ext = path.extname(entry.name).toLowerCase();
+        if (supportedExtensions.includes(ext)) {
+          try {
+            const metadata = await mm.parseFile(fullPath, options);
+            tracks.push({
+              filePath: fullPath,
+              fileName: entry.name,
+              metadata: this.serializeMetadata(metadata)
+            });
+          } catch (error) {
+            console.error(`Error parsing ${fullPath}:`, error.message);
+            tracks.push({
+              filePath: fullPath,
+              fileName: entry.name,
+              error: error.message
+            });
+          }
+        }
+      }
     }
   }
 
