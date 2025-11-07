@@ -1,0 +1,25 @@
+{
+  "name": "dynamix2025-webapp",
+  "version": "1.0.0",
+  "description": "Frontend for dynamix2025 application using Lit",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "dynamix2025",
+    "lit",
+    "web-components"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "lit": "^3.1.0",
+    "@flatmax/jrpc-oo": "*"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}
