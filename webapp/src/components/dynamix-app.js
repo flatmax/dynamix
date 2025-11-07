@@ -76,7 +76,7 @@ export class DynamixApp extends LitElement {
       <div class="container">
         <header>
           <h1>${this.title}</h1>
-          <p class="subtitle">Music Library Manager</p>
+          <p class="subtitle">Audio Track Playback</p>
         </header>
 
         <div class="tracks-section">
