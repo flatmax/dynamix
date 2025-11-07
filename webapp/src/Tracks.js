@@ -6,8 +6,8 @@ export class Tracks extends JRPCClient {
     tracks: { type: Array },
     loading: { type: Boolean },
     error: { type: String },
-    directoryPath: { type: String },
-    connected: { type: Boolean }
+    connected: { type: Boolean },
+    rootDirectory: { type: String }
   };
 
   static styles = css`
@@ -48,12 +48,20 @@ export class Tracks extends JRPCClient {
       align-items: center;
     }
 
-    input[type="text"] {
-      flex: 1;
-      padding: 8px 12px;
-      border: 1px solid #ccc;
+    .root-directory {
+      padding: 12px;
+      background: #f5f5f5;
       border-radius: 4px;
+      margin-bottom: 16px;
+      font-family: monospace;
       font-size: 14px;
+      color: #333;
+    }
+
+    .root-directory-label {
+      font-weight: bold;
+      margin-right: 8px;
+      color: #666;
     }
 
     button {
@@ -178,8 +186,8 @@ export class Tracks extends JRPCClient {
     this.tracks = [];
     this.loading = false;
     this.error = null;
-    this.directoryPath = '';
     this.connected = false;
+    this.rootDirectory = '';
   }
 
   connectedCallback() {
@@ -187,10 +195,13 @@ export class Tracks extends JRPCClient {
     this.addClass(this, 'Tracks');
   }
 
-  setupDone() {
+  async setupDone() {
     console.log('JRPC setup complete, ready to make calls');
     this.connected = true;
     this.requestUpdate();
+    
+    await this.loadRootDirectory();
+    await this.loadAllTracks();
   }
 
   remoteDisconnected(uuid) {
@@ -205,14 +216,31 @@ export class Tracks extends JRPCClient {
     this.requestUpdate();
   }
 
-  async loadDirectory() {
+  async loadRootDirectory() {
+    try {
+      const response = await this.call['MusicMetadata.getRootDirectory']();
+      const data = this.extractResponseData(response);
+      
+      if (data.success) {
+        this.rootDirectory = data.rootDirectory;
+        console.log('Root directory:', this.rootDirectory);
+      } else {
+        this.error = 'Failed to get root directory';
+      }
+    } catch (error) {
+      console.error('Error getting root directory:', error);
+      this.error = error.message || 'Failed to get root directory';
+    }
+  }
+
+  async loadAllTracks() {
     if (!this.connected) {
       this.error = 'Not connected to server';
       return;
     }
 
-    if (!this.directoryPath) {
-      this.error = 'Please enter a directory path';
+    if (!this.rootDirectory) {
+      this.error = 'Root directory not available';
       return;
     }
 
@@ -221,17 +249,19 @@ export class Tracks extends JRPCClient {
     this.tracks = [];
 
     try {
-      const response = await this.call['MusicMetadata.parseDirectory'](this.directoryPath);
+      console.log('Loading tracks from:', this.rootDirectory);
+      const response = await this.call['MusicMetadata.parseDirectory'](this.rootDirectory);
       const data = this.extractResponseData(response);
       
       if (data.success) {
         this.tracks = data.tracks;
+        console.log('Loaded tracks:', this.tracks.length);
       } else {
         this.error = data.error;
       }
     } catch (error) {
-      console.error('Error loading directory:', error);
-      this.error = error.message || 'Failed to load directory';
+      console.error('Error loading tracks:', error);
+      this.error = error.message || 'Failed to load tracks';
     } finally {
       this.loading = false;
     }
@@ -241,16 +271,6 @@ export class Tracks extends JRPCClient {
     if (!response) return null;
     const firstUuid = Object.keys(response)[0];
     return response[firstUuid];
-  }
-
-  handleInputChange(e) {
-    this.directoryPath = e.target.value;
-  }
-
-  handleKeyPress(e) {
-    if (e.key === 'Enter') {
-      this.loadDirectory();
-    }
   }
 
   formatDuration(seconds) {
@@ -336,17 +356,16 @@ export class Tracks extends JRPCClient {
           ${this.connected ? '✓ Connected to server' : '✗ Not connected to server'}
         </div>
 
+        ${this.rootDirectory ? html`
+          <div class="root-directory">
+            <span class="root-directory-label">Music Library:</span>
+            ${this.rootDirectory}
+          </div>
+        ` : ''}
+
         <div class="controls">
-          <input 
-            type="text" 
-            placeholder="Enter directory path (e.g., /path/to/music)"
-            .value=${this.directoryPath}
-            @input=${this.handleInputChange}
-            @keypress=${this.handleKeyPress}
-            ?disabled=${this.loading || !this.connected}
-          />
-          <button @click=${this.loadDirectory} ?disabled=${this.loading || !this.connected}>
-            ${this.loading ? 'Loading...' : 'Load Tracks'}
+          <button @click=${this.loadAllTracks} ?disabled=${this.loading || !this.connected}>
+            ${this.loading ? 'Loading...' : 'Refresh Tracks'}
           </button>
         </div>
 
