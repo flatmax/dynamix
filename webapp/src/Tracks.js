@@ -1,5 +1,11 @@
 import { html, css } from 'lit';
 import { JRPCClient } from '@flatmax/jrpc-oo/jrpc-client.js';
+import '@material/web/button/filled-button.js';
+import '@material/web/button/outlined-button.js';
+import '@material/web/progress/linear-progress.js';
+import '@material/web/list/list.js';
+import '@material/web/list/list-item.js';
+import '@material/web/icon/icon.js';
 
 export class Tracks extends JRPCClient {
   static properties = {
@@ -17,28 +23,23 @@ export class Tracks extends JRPCClient {
     }
 
     .connection-status {
-      padding: 8px 12px;
-      border-radius: 4px;
+      padding: 12px 16px;
+      border-radius: 8px;
       margin-bottom: 16px;
       font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .connection-status.connected {
-      background: #e8f5e9;
-      color: #2e7d32;
-      border: 1px solid #4caf50;
+      background: var(--md-sys-color-primary-container);
+      color: var(--md-sys-color-on-primary-container);
     }
 
     .connection-status.disconnected {
-      background: #ffebee;
-      color: #c62828;
-      border: 1px solid #f44336;
-    }
-
-    .connection-status.connecting {
-      background: #fff3e0;
-      color: #e65100;
-      border: 1px solid #ff9800;
+      background: var(--md-sys-color-error-container);
+      color: var(--md-sys-color-on-error-container);
     }
 
     .controls {
@@ -49,135 +50,138 @@ export class Tracks extends JRPCClient {
     }
 
     .root-directory {
-      padding: 12px;
-      background: #f5f5f5;
-      border-radius: 4px;
+      padding: 16px;
+      background: var(--md-sys-color-surface-variant);
+      color: var(--md-sys-color-on-surface-variant);
+      border-radius: 12px;
       margin-bottom: 16px;
-      font-family: monospace;
+      font-family: 'Roboto Mono', monospace;
       font-size: 14px;
-      color: #333;
     }
 
     .root-directory-label {
-      font-weight: bold;
+      font-weight: 500;
       margin-right: 8px;
-      color: #666;
+      font-family: 'Roboto', sans-serif;
     }
 
-    button {
-      padding: 8px 16px;
-      background: #667eea;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-
-    button:hover {
-      background: #5568d3;
-    }
-
-    button:disabled {
-      background: #ccc;
-      cursor: not-allowed;
-    }
-
-    .loading {
-      color: #666;
-      font-style: italic;
+    .loading-container {
       padding: 20px;
       text-align: center;
     }
 
+    .loading-text {
+      color: var(--md-sys-color-on-surface-variant);
+      font-size: 14px;
+      margin-top: 12px;
+    }
+
     .error {
-      color: #d32f2f;
-      padding: 12px;
-      background: #ffebee;
-      border-radius: 4px;
+      padding: 16px;
+      background: var(--md-sys-color-error-container);
+      color: var(--md-sys-color-on-error-container);
+      border-radius: 12px;
       margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
 
     .track-count {
       margin-bottom: 16px;
-      font-weight: bold;
-      color: #333;
+      font-weight: 500;
+      font-size: 16px;
+      color: var(--md-sys-color-on-surface);
     }
 
     .tracks-list {
-      display: grid;
-      gap: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
 
     .track-item {
-      background: white;
+      background: var(--md-sys-color-surface-container);
       padding: 16px;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      transition: box-shadow 0.2s;
+      border-radius: 12px;
+      transition: background 0.2s, box-shadow 0.2s;
+      cursor: pointer;
     }
 
     .track-item:hover {
-      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+      background: var(--md-sys-color-surface-container-high);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
     .track-item.error {
-      background: #ffebee;
-      border-left: 4px solid #d32f2f;
+      background: var(--md-sys-color-error-container);
+      color: var(--md-sys-color-on-error-container);
     }
 
     .track-title {
       font-size: 18px;
-      font-weight: bold;
-      color: #333;
+      font-weight: 500;
+      color: var(--md-sys-color-on-surface);
       margin-bottom: 8px;
     }
 
     .track-artist {
       font-size: 14px;
-      color: #666;
+      color: var(--md-sys-color-on-surface-variant);
       margin-bottom: 4px;
     }
 
     .track-album {
       font-size: 14px;
-      color: #888;
+      color: var(--md-sys-color-on-surface-variant);
       margin-bottom: 8px;
     }
 
     .track-details {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 8px;
+      gap: 12px;
       font-size: 12px;
-      color: #666;
-      margin-top: 8px;
-      padding-top: 8px;
-      border-top: 1px solid #eee;
+      color: var(--md-sys-color-on-surface-variant);
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--md-sys-color-outline-variant);
     }
 
     .track-detail {
       display: flex;
       flex-direction: column;
+      gap: 4px;
     }
 
     .track-detail-label {
-      font-weight: bold;
-      color: #888;
+      font-weight: 500;
+      color: var(--md-sys-color-on-surface);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     .track-path {
       font-size: 11px;
-      color: #999;
+      color: var(--md-sys-color-on-surface-variant);
       margin-top: 8px;
-      font-family: monospace;
+      font-family: 'Roboto Mono', monospace;
       word-break: break-all;
+      opacity: 0.7;
     }
 
     .track-error {
-      color: #d32f2f;
+      color: var(--md-sys-color-error);
       font-size: 12px;
       margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    md-linear-progress {
+      width: 100%;
     }
   `;
 
@@ -290,7 +294,10 @@ export class Tracks extends JRPCClient {
       return html`
         <div class="track-item error">
           <div class="track-title">${track.fileName}</div>
-          <div class="track-error">Error: ${track.error}</div>
+          <div class="track-error">
+            <md-icon>error</md-icon>
+            <span>Error: ${track.error}</span>
+          </div>
           <div class="track-path">${track.filePath}</div>
         </div>
       `;
@@ -353,7 +360,8 @@ export class Tracks extends JRPCClient {
     return html`
       <div>
         <div class="connection-status ${this.connected ? 'connected' : 'disconnected'}">
-          ${this.connected ? '✓ Connected to server' : '✗ Not connected to server'}
+          <md-icon>${this.connected ? 'check_circle' : 'error'}</md-icon>
+          <span>${this.connected ? 'Connected to server' : 'Not connected to server'}</span>
         </div>
 
         ${this.rootDirectory ? html`
@@ -364,17 +372,33 @@ export class Tracks extends JRPCClient {
         ` : ''}
 
         <div class="controls">
-          <button @click=${this.loadAllTracks} ?disabled=${this.loading || !this.connected}>
+          <md-filled-button 
+            @click=${this.loadAllTracks} 
+            ?disabled=${this.loading || !this.connected}>
+            <md-icon slot="icon">refresh</md-icon>
             ${this.loading ? 'Loading...' : 'Refresh Tracks'}
-          </button>
+          </md-filled-button>
         </div>
 
-        ${this.error ? html`<div class="error">${this.error}</div>` : ''}
+        ${this.error ? html`
+          <div class="error">
+            <md-icon>error</md-icon>
+            <span>${this.error}</span>
+          </div>
+        ` : ''}
         
-        ${this.loading ? html`<div class="loading">Scanning directory and parsing metadata...</div>` : ''}
+        ${this.loading ? html`
+          <div class="loading-container">
+            <md-linear-progress indeterminate></md-linear-progress>
+            <div class="loading-text">Scanning directory and parsing metadata...</div>
+          </div>
+        ` : ''}
         
         ${this.tracks.length > 0 ? html`
-          <div class="track-count">Found ${this.tracks.length} track${this.tracks.length !== 1 ? 's' : ''}</div>
+          <div class="track-count">
+            <md-icon>library_music</md-icon>
+            Found ${this.tracks.length} track${this.tracks.length !== 1 ? 's' : ''}
+          </div>
           <div class="tracks-list">
             ${this.tracks.map(track => this.renderTrack(track))}
           </div>

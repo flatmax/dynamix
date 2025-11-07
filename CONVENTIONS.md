@@ -18,3 +18,8 @@ JRPC-OO allows direct call and response of nodejs classes in the browser and bro
 
 Store each class in its own js file, e.g. Test.js has the code for the class Test in it.
 In the webapp, the kebab-case file name webapp/track-play.js imports TrackPlay and does customElements.define, however webapp/src/TrackPlay.js has the class's code in it.
+
+UI Design:
+Use Material Design 3 (Material Web Components) for all UI elements in the webapp.
+Import Material Web Components as needed: @material/web
+Common components: md-filled-button, md-outlined-button, md-text-button, md-icon-button, md-linear-progress, md-circular-progress, md-list, md-list-item, md-icon, md-card, md-elevated-card, md-outlined-card

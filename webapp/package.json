@@ -17,7 +17,8 @@
   "license": "ISC",
   "dependencies": {
     "lit": "^3.1.0",
-    "@flatmax/jrpc-oo": "*"
+    "@flatmax/jrpc-oo": "*",
+    "@material/web": "^1.5.0"
   },
   "devDependencies": {
     "vite": "^5.0.0"

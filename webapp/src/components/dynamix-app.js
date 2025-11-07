@@ -1,4 +1,5 @@
 import { LitElement, html, css } from 'lit';
+import '@material/web/elevation/elevation.js';
 
 export class DynamixApp extends LitElement {
   static properties = {
@@ -10,7 +11,7 @@ export class DynamixApp extends LitElement {
     :host {
       display: block;
       min-height: 100vh;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: var(--md-sys-color-background);
     }
 
     .container {
@@ -21,26 +22,28 @@ export class DynamixApp extends LitElement {
 
     header {
       text-align: center;
-      color: white;
+      color: var(--md-sys-color-on-surface);
       padding: 3rem 0;
     }
 
     h1 {
       font-size: 3rem;
-      margin: 0 0 1rem 0;
-      font-weight: 700;
+      margin: 0 0 0.5rem 0;
+      font-weight: 400;
+      color: var(--md-sys-color-primary);
     }
 
     .subtitle {
       font-size: 1.25rem;
-      opacity: 0.9;
+      color: var(--md-sys-color-on-surface-variant);
+      font-weight: 400;
     }
 
     .tracks-section {
-      background: white;
-      border-radius: 12px;
+      background: var(--md-sys-color-surface);
+      border-radius: 28px;
       padding: 2rem;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      box-shadow: var(--md-sys-elevation-level2);
     }
   `;
 
@@ -73,6 +76,7 @@ export class DynamixApp extends LitElement {
       <div class="container">
         <header>
           <h1>${this.title}</h1>
+          <p class="subtitle">Music Library Manager</p>
         </header>
 
         <div class="tracks-section">
