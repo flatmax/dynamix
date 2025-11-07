@@ -185,25 +185,6 @@ export class Tracks extends JRPCClient {
   connectedCallback() {
     super.connectedCallback();
     this.addClass(this, 'Tracks');
-    this.autoConnect();
-  }
-
-  async autoConnect() {
-    try {
-      const host = 'localhost';
-      const port = 9000;
-      const useSSL = false;
-      
-      console.log(`Connecting to JRPC server at ${useSSL ? 'wss' : 'ws'}://${host}:${port}`);
-      
-      await this.connect(host, port, useSSL);
-      this.connected = true;
-      console.log('Successfully connected to JRPC server');
-    } catch (error) {
-      console.error('Failed to connect to JRPC server:', error);
-      this.error = `Failed to connect to server: ${error.message}`;
-      this.connected = false;
-    }
   }
 
   setupDone() {

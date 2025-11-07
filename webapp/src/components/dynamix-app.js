@@ -2,7 +2,8 @@ import { LitElement, html, css } from 'lit';
 
 export class DynamixApp extends LitElement {
   static properties = {
-    title: { type: String }
+    title: { type: String },
+    connected: { type: Boolean }
   };
 
   static styles = css`
@@ -60,6 +61,25 @@ export class DynamixApp extends LitElement {
   constructor() {
     super();
     this.title = 'Dynamix 2025';
+    this.connected = false;
+  }
+
+  firstUpdated() {
+    this.setupConnection();
+  }
+
+  setupConnection() {
+    const tracksComponent = this.shadowRoot.querySelector('tracks-component');
+    if (tracksComponent) {
+      const host = 'localhost';
+      const port = 9000;
+      const useSSL = false;
+      
+      const protocol = useSSL ? 'wss' : 'ws';
+      tracksComponent.serverURI = `${protocol}://${host}:${port}`;
+      
+      console.log(`Setting server URI to: ${tracksComponent.serverURI}`);
+    }
   }
 
   render() {

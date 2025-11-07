@@ -6,12 +6,30 @@ import path from 'path';
 class MusicMetadata {
   constructor() {
     this.name = 'MusicMetadata';
+    this.rootDirectory = null;
+  }
+
+  // Validate that a path is within the root directory
+  _validatePath(requestedPath) {
+    if (!this.rootDirectory) {
+      throw new Error('Root directory not configured');
+    }
+
+    const absolutePath = path.resolve(requestedPath);
+    const normalizedRoot = path.resolve(this.rootDirectory);
+
+    if (!absolutePath.startsWith(normalizedRoot)) {
+      throw new Error(`Access denied: Path ${requestedPath} is outside root directory ${this.rootDirectory}`);
+    }
+
+    return absolutePath;
   }
 
   // Parse metadata from a file path
   async parseFile(filePath, options = {}) {
     try {
-      const metadata = await mm.parseFile(filePath, options);
+      const validatedPath = this._validatePath(filePath);
+      const metadata = await mm.parseFile(validatedPath, options);
       return {
         success: true,
         metadata: this.serializeMetadata(metadata)
@@ -44,7 +62,8 @@ class MusicMetadata {
   // Parse metadata from a stream
   async parseStream(filePath, fileInfo, options = {}) {
     try {
-      const stream = fs.createReadStream(filePath);
+      const validatedPath = this._validatePath(filePath);
+      const stream = fs.createReadStream(validatedPath);
       const metadata = await mm.parseStream(stream, fileInfo, options);
       return {
         success: true,
@@ -61,7 +80,8 @@ class MusicMetadata {
   // Get common metadata formats
   async getCommonMetadata(filePath) {
     try {
-      const metadata = await mm.parseFile(filePath);
+      const validatedPath = this._validatePath(filePath);
+      const metadata = await mm.parseFile(validatedPath);
       return {
         success: true,
         common: metadata.common,
@@ -78,8 +98,9 @@ class MusicMetadata {
   // Recursively parse a directory and return all track metadata
   async parseDirectory(directoryPath, options = {}) {
     try {
+      const validatedPath = this._validatePath(directoryPath);
       const tracks = [];
-      await this._parseDirectoryRecursive(directoryPath, tracks, options);
+      await this._parseDirectoryRecursive(validatedPath, tracks, options);
       return {
         success: true,
         tracks: tracks,
@@ -153,6 +174,14 @@ class MusicMetadata {
         'flac', 'ogg', 'opus', 'wav', 'wma',
         'ape', 'mpc', 'wv', 'tta'
       ]
+    };
+  }
+
+  // Get the root directory
+  getRootDirectory() {
+    return {
+      success: true,
+      rootDirectory: this.rootDirectory
     };
   }
 }
