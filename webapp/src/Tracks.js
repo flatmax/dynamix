@@ -1,4 +1,4 @@
-import { LitElement, html, css } from 'lit';
+import { html, css } from 'lit';
 import { JRPCClient } from '@flatmax/jrpc-oo/jrpc-client.js';
 
 export class Tracks extends JRPCClient {
