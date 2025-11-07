@@ -17,7 +17,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@flatmax/jrpc-oo": "*"
+    "@flatmax/jrpc-oo": "*",
+    "music-metadata": "^10.5.1"
   },
   "devDependencies": {
   }
