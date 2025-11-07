@@ -36,20 +36,6 @@ export class DynamixApp extends LitElement {
       opacity: 0.9;
     }
 
-    .content {
-      background: white;
-      border-radius: 12px;
-      padding: 2rem;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-      margin-bottom: 2rem;
-    }
-
-    .welcome {
-      font-size: 1.125rem;
-      line-height: 1.6;
-      color: #333;
-    }
-
     .tracks-section {
       background: white;
       border-radius: 12px;
@@ -87,16 +73,7 @@ export class DynamixApp extends LitElement {
       <div class="container">
         <header>
           <h1>${this.title}</h1>
-          <p class="subtitle">Music Library Manager</p>
         </header>
-        
-        <div class="content">
-          <p class="welcome">
-            Welcome to Dynamix 2025! 
-            This music library manager allows you to scan directories and view metadata for your music collection.
-            Enter a directory path below to get started.
-          </p>
-        </div>
 
         <div class="tracks-section">
           <tracks-component></tracks-component>
