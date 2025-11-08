@@ -2,6 +2,8 @@
 
 An audio track playback application based on the ideas of the original Dynamix project from the 90s.
 
+## History
+
 This is a 2025 version of a 1990s original software from here https://www.ibiblio.org/pub/linux/docs/LSM/LSM.1999-08-30 :
 ```
 Begin3
