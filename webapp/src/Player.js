@@ -4,6 +4,7 @@ import '@material/web/button/filled-button.js';
 import '@material/web/iconbutton/icon-button.js';
 import '@material/web/icon/icon.js';
 import '@material/web/progress/linear-progress.js';
+import '@material/web/slider/slider.js';
 
 export class Player extends JRPCClient {
   static properties = {
@@ -14,7 +15,8 @@ export class Player extends JRPCClient {
     currentTime: { type: Number },
     duration: { type: Number },
     direction: { type: Number },
-    connected: { type: Boolean }
+    connected: { type: Boolean },
+    windowSize: { type: Number }
   };
 
   static styles = css`
@@ -81,6 +83,7 @@ export class Player extends JRPCClient {
       justify-content: center;
       align-items: center;
       gap: 12px;
+      margin-bottom: 20px;
     }
 
     .direction-indicator {
@@ -89,6 +92,33 @@ export class Player extends JRPCClient {
       padding: 4px 12px;
       background: var(--md-sys-color-surface-variant);
       border-radius: 12px;
+    }
+
+    .window-size-control {
+      margin-top: 20px;
+      padding: 16px;
+      background: var(--md-sys-color-surface-variant);
+      border-radius: 12px;
+    }
+
+    .window-size-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--md-sys-color-on-surface);
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .window-size-value {
+      font-family: 'Roboto Mono', monospace;
+      color: var(--md-sys-color-primary);
+    }
+
+    .window-size-slider {
+      width: 100%;
+      margin-top: 8px;
     }
 
     .error {
@@ -124,6 +154,7 @@ export class Player extends JRPCClient {
     this.duration = 0;
     this.direction = 1;
     this.connected = false;
+    this.windowSize = 4096; // Default window size
     
     this.audioContext = null;
     this.audioWorkletNode = null;
@@ -148,7 +179,7 @@ export class Player extends JRPCClient {
       this.audioWorkletNode.connect(this.audioContext.destination);
       
       this.audioWorkletNode.port.onmessage = (e) => {
-        const { type, position, duration } = e.data;
+        const { type, position, duration, windowSize } = e.data;
         
         switch (type) {
           case 'loaded':
@@ -165,8 +196,17 @@ export class Player extends JRPCClient {
             this.isPlaying = false;
             this.requestUpdate();
             break;
+            
+          case 'windowSizeChanged':
+            this.windowSize = windowSize;
+            console.log('Window size changed to:', windowSize);
+            this.requestUpdate();
+            break;
         }
       };
+      
+      // Set initial window size
+      this.setWindowSize(this.windowSize);
     } catch (error) {
       console.error('Error initializing audio context:', error);
       this.error = 'Failed to initialize audio system';
@@ -276,6 +316,21 @@ export class Player extends JRPCClient {
     });
   }
 
+  setWindowSize(size) {
+    if (!this.audioWorkletNode) return;
+    
+    this.audioWorkletNode.port.postMessage({
+      type: 'setWindowSize',
+      data: { windowSize: size }
+    });
+  }
+
+  handleWindowSizeChange(e) {
+    const value = parseInt(e.target.value);
+    this.windowSize = value;
+    this.setWindowSize(value);
+  }
+
   handleProgressClick(e) {
     if (!this.duration) return;
     
@@ -325,6 +380,17 @@ export class Player extends JRPCClient {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   }
 
+  formatWindowSize(frames) {
+    if (!this.audioContext) return `${frames} frames`;
+    const sampleRate = this.audioContext.sampleRate;
+    const seconds = frames / sampleRate;
+    if (seconds < 1) {
+      return `${frames} frames (${(seconds * 1000).toFixed(1)} ms)`;
+    } else {
+      return `${frames} frames (${seconds.toFixed(2)} s)`;
+    }
+  }
+
   render() {
     if (!this.currentTrack) {
       return html`
@@ -339,6 +405,10 @@ export class Player extends JRPCClient {
 
     const common = this.currentTrack.metadata?.common || {};
     const progress = this.duration > 0 ? (this.currentTime / this.duration) * 100 : 0;
+    
+    // Calculate min and max window size
+    const minWindowSize = 128;
+    const maxWindowSize = this.audioContext ? Math.floor(10 * this.audioContext.sampleRate) : 480000;
 
     return html`
       <div class="player-container">
@@ -386,6 +456,22 @@ export class Player extends JRPCClient {
             <span class="direction-indicator">
               ${this.direction === 1 ? 'Forward' : 'Reverse'}
             </span>
+          </div>
+
+          <div class="window-size-control">
+            <div class="window-size-label">
+              <span>Window Size (N)</span>
+              <span class="window-size-value">${this.formatWindowSize(this.windowSize)}</span>
+            </div>
+            <input
+              type="range"
+              class="window-size-slider"
+              min="${minWindowSize}"
+              max="${maxWindowSize}"
+              step="128"
+              .value="${this.windowSize}"
+              @input=${this.handleWindowSizeChange}
+            />
           </div>
         `}
       </div>
