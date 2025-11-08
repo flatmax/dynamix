@@ -8,6 +8,7 @@ class BlockAudioProcessor extends AudioWorkletProcessor {
     this.windowSize = 4096; // Default window size (N frames)
     this.windowBuffer = null; // Buffer to hold the current window
     this.windowPosition = 0; // Position within the current window
+    this.pendingWindowSize = null; // Pending window size change
     
     this.port.onmessage = (e) => {
       const { type, data } = e.data;
@@ -19,6 +20,7 @@ class BlockAudioProcessor extends AudioWorkletProcessor {
           this.isPlaying = false;
           this.windowBuffer = null;
           this.windowPosition = 0;
+          this.pendingWindowSize = null;
           this.port.postMessage({ type: 'loaded', duration: this.audioData[0].length / sampleRate });
           break;
           
@@ -35,6 +37,7 @@ class BlockAudioProcessor extends AudioWorkletProcessor {
           this.position = 0;
           this.windowBuffer = null;
           this.windowPosition = 0;
+          this.pendingWindowSize = null;
           break;
           
         case 'seek':
@@ -52,13 +55,21 @@ class BlockAudioProcessor extends AudioWorkletProcessor {
         case 'setWindowSize':
           const minSize = 128;
           const maxSize = Math.floor(10 * sampleRate); // 10 seconds
-          this.windowSize = Math.max(minSize, Math.min(maxSize, data.windowSize));
-          this.windowBuffer = null;
-          this.windowPosition = 0;
-          this.port.postMessage({ type: 'windowSizeChanged', windowSize: this.windowSize });
+          const newSize = Math.max(minSize, Math.min(maxSize, data.windowSize));
+          
+          // Store the pending window size change instead of applying immediately
+          this.pendingWindowSize = newSize;
           break;
       }
     };
+  }
+  
+  applyPendingWindowSize() {
+    if (this.pendingWindowSize !== null) {
+      this.windowSize = this.pendingWindowSize;
+      this.pendingWindowSize = null;
+      this.port.postMessage({ type: 'windowSizeChanged', windowSize: this.windowSize });
+    }
   }
   
   loadWindow() {
@@ -66,12 +77,20 @@ class BlockAudioProcessor extends AudioWorkletProcessor {
       return false;
     }
     
+    // Apply pending window size change before loading new window
+    this.applyPendingWindowSize();
+    
     const numChannels = this.audioData.length;
     const audioLength = this.audioData[0].length;
     
     // Allocate window buffer if needed
     if (!this.windowBuffer || this.windowBuffer.length !== numChannels) {
       this.windowBuffer = [];
+      for (let ch = 0; ch < numChannels; ch++) {
+        this.windowBuffer[ch] = new Float32Array(this.windowSize);
+      }
+    } else if (this.windowBuffer[0].length !== this.windowSize) {
+      // Reallocate if window size changed
       for (let ch = 0; ch < numChannels; ch++) {
         this.windowBuffer[ch] = new Float32Array(this.windowSize);
       }
