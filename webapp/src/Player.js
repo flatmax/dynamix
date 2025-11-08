@@ -351,7 +351,8 @@ export class Player extends JRPCClient {
               this.audioManager.toggleDirection();
               this.direction = this.audioManager.direction;
             },
-            () => this.audioManager.syncWindow()
+            () => this.audioManager.syncWindow(),
+            () => this.audioManager.skipBackToStart()
           )}
 
           ${PlayerUI.renderWindowSizeControl(

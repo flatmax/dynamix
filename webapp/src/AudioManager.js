@@ -146,6 +146,24 @@ export class AudioManager {
     });
   }
 
+  skipBackToStart() {
+    if (!this.audioContext) return;
+    
+    const sampleRate = this.audioContext.sampleRate;
+    const windowSizeSeconds = this.windowSize / sampleRate;
+    
+    // Use modulo to find the remainder position close to the beginning
+    const newPosition = this.currentTime % windowSizeSeconds;
+    
+    console.log('Skip back to start using modulo:', {
+      currentTime: this.currentTime,
+      windowSizeSeconds: windowSizeSeconds,
+      newPosition: newPosition
+    });
+    
+    this.seek(newPosition);
+  }
+
   setWindowSize(size) {
     if (!this.audioWorkletNode) return;
     

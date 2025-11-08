@@ -56,9 +56,13 @@ export class PlayerUI {
     `;
   }
 
-  static renderControls(isPlaying, direction, onStop, onTogglePlayPause, onToggleDirection, onSyncWindow) {
+  static renderControls(isPlaying, direction, onStop, onTogglePlayPause, onToggleDirection, onSyncWindow, onSkipBackToStart) {
     return html`
       <div class="controls">
+        <md-icon-button @click=${onSkipBackToStart} title="Skip back to start (modulo window size)">
+          <md-icon>skip_previous</md-icon>
+        </md-icon-button>
+
         <md-icon-button @click=${onStop}>
           <md-icon>stop</md-icon>
         </md-icon-button>
