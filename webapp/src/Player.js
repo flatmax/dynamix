@@ -1,7 +1,9 @@
-import { html, css } from 'lit';
+import { html } from 'lit';
 import { JRPCClient } from '@flatmax/jrpc-oo/jrpc-client.js';
 import { AudioManager } from './AudioManager.js';
 import { PlayerUI } from './PlayerUI.js';
+import { PlayerEventHandlers } from './PlayerEventHandlers.js';
+import { playerStyles } from './styles/PlayerStyles.js';
 import '@material/web/button/filled-button.js';
 import '@material/web/iconbutton/icon-button.js';
 import '@material/web/icon/icon.js';
@@ -21,141 +23,7 @@ export class Player extends JRPCClient {
     windowSize: { type: Number }
   };
 
-  static styles = css`
-    :host {
-      display: block;
-      padding: 16px;
-    }
-
-    .player-container {
-      background: var(--md-sys-color-surface-container);
-      border-radius: 16px;
-      padding: 24px;
-      box-shadow: var(--md-sys-elevation-level2);
-    }
-
-    .track-info {
-      margin-bottom: 20px;
-    }
-
-    .track-title {
-      font-size: 20px;
-      font-weight: 500;
-      color: var(--md-sys-color-on-surface);
-      margin: 0 0 8px 0;
-    }
-
-    .track-artist {
-      font-size: 16px;
-      color: var(--md-sys-color-on-surface-variant);
-      margin: 0;
-    }
-
-    .progress-container {
-      margin-bottom: 20px;
-    }
-
-    .progress-bar {
-      width: 100%;
-      height: 4px;
-      background: var(--md-sys-color-outline-variant);
-      border-radius: 2px;
-      cursor: pointer;
-      position: relative;
-      margin-bottom: 8px;
-    }
-
-    .progress-fill {
-      height: 100%;
-      background: var(--md-sys-color-primary);
-      border-radius: 2px;
-      transition: width 0.1s linear;
-    }
-
-    .time-display {
-      display: flex;
-      justify-content: space-between;
-      font-size: 12px;
-      color: var(--md-sys-color-on-surface-variant);
-      font-family: 'Roboto Mono', monospace;
-    }
-
-    .controls {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-
-    .direction-indicator {
-      font-size: 12px;
-      color: var(--md-sys-color-on-surface-variant);
-      padding: 4px 12px;
-      background: var(--md-sys-color-surface-variant);
-      border-radius: 12px;
-    }
-
-    .window-size-control {
-      margin-top: 20px;
-      padding: 16px;
-      background: var(--md-sys-color-surface-variant);
-      border-radius: 12px;
-    }
-
-    .window-size-label {
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--md-sys-color-on-surface);
-      margin-bottom: 8px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .window-size-value {
-      font-family: 'Roboto Mono', monospace;
-      color: var(--md-sys-color-primary);
-    }
-
-    .window-size-controls {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 8px;
-    }
-
-    .window-size-slider {
-      flex: 1;
-    }
-
-    .window-size-buttons {
-      display: flex;
-      gap: 4px;
-    }
-
-    .error {
-      padding: 16px;
-      background: var(--md-sys-color-error-container);
-      color: var(--md-sys-color-on-error-container);
-      border-radius: 12px;
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .loading {
-      text-align: center;
-      padding: 20px;
-    }
-
-    .no-track {
-      text-align: center;
-      padding: 40px;
-      color: var(--md-sys-color-on-surface-variant);
-    }
-  `;
+  static styles = playerStyles;
 
   constructor() {
     super();
@@ -170,6 +38,7 @@ export class Player extends JRPCClient {
     this.windowSize = 96000; // Default to 2 seconds at 48kHz
     
     this.audioManager = new AudioManager();
+    this.eventHandlers = new PlayerEventHandlers(this);
     this.setupAudioManagerCallbacks();
   }
 
@@ -289,35 +158,6 @@ export class Player extends JRPCClient {
     this.audioManager.syncWindow();
   }
 
-  handleProgressClick(e) {
-    if (!this.duration) return;
-    
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const percent = x / rect.width;
-    const position = percent * this.duration;
-    
-    this.audioManager.seek(position);
-  }
-
-  handleWindowSizeChange(e) {
-    const value = parseInt(e.target.value);
-    this.windowSize = value;
-    this.audioManager.setWindowSize(value);
-  }
-
-  multiplyWindowSize() {
-    const newSize = this.windowSize * 2;
-    this.windowSize = newSize;
-    this.audioManager.setWindowSize(newSize);
-  }
-
-  divideWindowSize() {
-    const newSize = Math.floor(this.windowSize / 2);
-    this.windowSize = newSize;
-    this.audioManager.setWindowSize(newSize);
-  }
-
   extractResponseData(response) {
     if (!response) return null;
     const firstUuid = Object.keys(response)[0];
@@ -339,20 +179,17 @@ export class Player extends JRPCClient {
           ${PlayerUI.renderProgressBar(
             this.currentTime,
             this.duration,
-            (e) => this.handleProgressClick(e)
+            (e) => this.eventHandlers.handleProgressClick(e)
           )}
 
           ${PlayerUI.renderControls(
             this.isPlaying,
             this.direction,
-            () => this.audioManager.stop(),
-            () => this.audioManager.togglePlayPause(),
-            () => {
-              this.audioManager.toggleDirection();
-              this.direction = this.audioManager.direction;
-            },
-            () => this.audioManager.syncWindow(),
-            () => this.audioManager.skipBackToStart()
+            () => this.eventHandlers.handleStop(),
+            () => this.eventHandlers.handleTogglePlayPause(),
+            () => this.eventHandlers.handleToggleDirection(),
+            () => this.eventHandlers.handleSyncWindow(),
+            () => this.eventHandlers.handleSkipBackToStart()
           )}
 
           ${PlayerUI.renderWindowSizeControl(
@@ -360,9 +197,9 @@ export class Player extends JRPCClient {
             this.audioManager.getMinWindowSize(),
             this.audioManager.getMaxWindowSize(),
             this.audioManager.audioContext,
-            (e) => this.handleWindowSizeChange(e),
-            () => this.divideWindowSize(),
-            () => this.multiplyWindowSize()
+            (e) => this.eventHandlers.handleWindowSizeChange(e),
+            () => this.eventHandlers.divideWindowSize(),
+            () => this.eventHandlers.multiplyWindowSize()
           )}
         `}
       </div>
