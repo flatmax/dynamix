@@ -100,6 +100,13 @@ export class DynamixApp extends LitElement {
         playerComponent.loadTrack(e.detail.track);
       }
     });
+
+    this.addEventListener('tap-time-load', (e) => {
+      const playerComponent = this.shadowRoot.querySelector('player-component');
+      if (playerComponent) {
+        playerComponent.loadTapTime(e.detail);
+      }
+    });
   }
 
   render() {

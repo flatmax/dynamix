@@ -266,6 +266,27 @@ export class Player extends JRPCClient {
     }
   }
 
+  loadTapTime(tapTimeData) {
+    if (!this.audioManager.audioContext) {
+      console.error('Audio context not initialized');
+      return;
+    }
+
+    const sampleRate = this.audioManager.audioContext.sampleRate;
+    const intervalSeconds = tapTimeData.intervalMs / 1000;
+    const windowSizeFrames = Math.floor(intervalSeconds * sampleRate);
+    
+    console.log('Loading tap time to player:', {
+      intervalMs: tapTimeData.intervalMs,
+      bpm: tapTimeData.bpm,
+      windowSizeFrames: windowSizeFrames
+    });
+    
+    this.windowSize = windowSizeFrames;
+    this.audioManager.setWindowSize(windowSizeFrames);
+    this.audioManager.syncWindow();
+  }
+
   handleProgressClick(e) {
     if (!this.duration) return;
     

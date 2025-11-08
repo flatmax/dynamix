@@ -147,6 +147,21 @@ export class TapTime extends LitElement {
     this.bpm = 60000 / this.averageInterval;
   }
 
+  loadToPlayer() {
+    if (this.averageInterval === 0) return;
+    
+    const event = new CustomEvent('tap-time-load', {
+      detail: {
+        intervalMs: this.averageInterval,
+        bpm: this.bpm,
+        frequency: 1000 / this.averageInterval
+      },
+      bubbles: true,
+      composed: true
+    });
+    this.dispatchEvent(event);
+  }
+
   reset() {
     this.tapTimes = [];
     this.averageInterval = 0;
@@ -200,6 +215,10 @@ export class TapTime extends LitElement {
           </div>
 
           <div class="controls">
+            <md-filled-button @click=${this.loadToPlayer}>
+              <md-icon slot="icon">sync</md-icon>
+              Load to Player
+            </md-filled-button>
             <md-outlined-button @click=${this.reset}>
               <md-icon slot="icon">refresh</md-icon>
               Reset
