@@ -2,6 +2,31 @@
 
 An audio track playback application based on the ideas of the original Dynamix project from the 90s.
 
+This is a 2025 version of a 1990s original software from here https://www.ibiblio.org/pub/linux/docs/LSM/LSM.1999-08-30 :
+```
+Begin3
+Title:          Project Dynamic (dynamix)
+Version:        0.0.5
+Entered-date:   02FEB99
+Description:    Real time audio mastering of CDDA to hard drive or sound driver.
+	   	With Gui interface. Features include : forwards, backwards and reverse 
+		squared play mode. Dumping to hard drive as raw - mono / stereo / variable 
+		bits and rates.
+Keywords:       CD-DA, CDDA, CD-ROM.
+Author:         Matt FLAX
+Maintained-by:  Matt FLAX
+Primary-site:   sunsite.unc.edu /pub/Linux/apps/sound/cdrom
+		844 project.dynamic.lsm
+                14 M project.dynamic.mp3
+Alternate-site: ftp://ftp.cse.unsw.edu.au /pub/users/flatmax
+                144kB dynamic.0.0.5.tar.gz
+Original-site:  ftp://ftp.cse.unsw.edu.au /pub/users/flatmax
+                144kB dynamic.0.0.5.tar.gz
+Platforms:      Linux
+Copying-policy: Shareware
+```
+End
+
 ## Overview
 
 Dynamix 2025 provides object-oriented RPC between the browser and Node.js for audio track playback. It scans your music library, extracts metadata from audio files, and displays them in a modern Material Design 3 interface.
