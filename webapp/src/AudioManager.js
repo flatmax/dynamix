@@ -6,7 +6,7 @@ export class AudioManager {
     this.currentTime = 0;
     this.duration = 0;
     this.direction = 1;
-    this.windowSize = 4096;
+    this.windowSize = 96000; // Default to 2 seconds at 48kHz
     this.onProgressUpdate = null;
     this.onDurationUpdate = null;
     this.onPlayStateChange = null;
@@ -24,6 +24,8 @@ export class AudioManager {
         this.handleWorkletMessage(e.data);
       };
       
+      // Set window size to 2 seconds based on actual sample rate
+      this.windowSize = Math.floor(2 * this.audioContext.sampleRate);
       this.setWindowSize(this.windowSize);
       return true;
     } catch (error) {

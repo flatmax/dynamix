@@ -5,7 +5,7 @@ class BlockAudioProcessor extends AudioWorkletProcessor {
     this.position = 0;
     this.direction = 1; // 1 for forward, -1 for reverse
     this.isPlaying = false;
-    this.windowSize = 4096; // Default window size (N frames)
+    this.windowSize = Math.floor(2 * sampleRate); // Default to 2 seconds
     this.windowBuffer = null; // Buffer to hold the current window
     this.windowPosition = 0; // Position within the current window
     this.pendingWindowSize = null; // Pending window size change
@@ -102,6 +102,13 @@ class BlockAudioProcessor extends AudioWorkletProcessor {
       }
     }
     
+    // Handle looping when reaching boundaries
+    if (this.direction === 1 && this.position >= audioLength) {
+      this.position = 0;
+    } else if (this.direction === -1 && this.position < 0) {
+      this.position = audioLength;
+    }
+    
     // Load N samples into the window buffer
     for (let ch = 0; ch < numChannels; ch++) {
       const inputChannel = this.audioData[ch];
@@ -117,9 +124,13 @@ class BlockAudioProcessor extends AudioWorkletProcessor {
           windowChannel.set(inputChannel.subarray(startPos, endPos), 0);
         }
         
-        // Fill remaining with zeros if we hit the end
+        // If we need more samples, wrap around to the beginning
         if (copyLength < this.windowSize) {
-          windowChannel.fill(0, copyLength);
+          const remainingSamples = this.windowSize - copyLength;
+          const wrapLength = Math.min(remainingSamples, audioLength);
+          if (wrapLength > 0) {
+            windowChannel.set(inputChannel.subarray(0, wrapLength), copyLength);
+          }
         }
       } else {
         // Reverse direction - copy window BEFORE current position, but keep samples in forward order
@@ -132,9 +143,14 @@ class BlockAudioProcessor extends AudioWorkletProcessor {
           windowChannel.set(inputChannel.subarray(startPos, endPos), 0);
         }
         
-        // Fill remaining with zeros if we hit the beginning
+        // If we need more samples, wrap around to the end
         if (copyLength < this.windowSize) {
-          windowChannel.fill(0, copyLength);
+          const remainingSamples = this.windowSize - copyLength;
+          const wrapStartPos = Math.max(0, audioLength - remainingSamples);
+          const wrapLength = audioLength - wrapStartPos;
+          if (wrapLength > 0) {
+            windowChannel.set(inputChannel.subarray(wrapStartPos, audioLength), copyLength);
+          }
         }
       }
     }
@@ -142,14 +158,6 @@ class BlockAudioProcessor extends AudioWorkletProcessor {
     // Update position to the end of the window
     this.position += this.windowSize * this.direction;
     this.windowPosition = 0;
-    
-    // Check if we've reached the end
-    if (this.direction === 1 && this.position >= audioLength) {
-      return false;
-    }
-    if (this.direction === -1 && this.position < 0) {
-      return false;
-    }
     
     return true;
   }
@@ -170,7 +178,7 @@ class BlockAudioProcessor extends AudioWorkletProcessor {
       if (!this.windowBuffer || this.windowPosition >= this.windowSize) {
         const loaded = this.loadWindow();
         if (!loaded) {
-          // Reached the end of the audio
+          // This shouldn't happen with looping, but handle it just in case
           this.isPlaying = false;
           this.port.postMessage({ type: 'ended' });
           

@@ -167,7 +167,7 @@ export class Player extends JRPCClient {
     this.duration = 0;
     this.direction = 1;
     this.connected = false;
-    this.windowSize = 4096;
+    this.windowSize = 96000; // Default to 2 seconds at 48kHz
     
     this.audioManager = new AudioManager();
     this.setupAudioManagerCallbacks();
@@ -209,6 +209,8 @@ export class Player extends JRPCClient {
   async initAudio() {
     try {
       await this.audioManager.initialize();
+      // Update windowSize after initialization to reflect actual sample rate
+      this.windowSize = this.audioManager.windowSize;
     } catch (error) {
       console.error('Error initializing audio:', error);
       this.error = error.message;
