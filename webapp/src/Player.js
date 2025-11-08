@@ -1,5 +1,7 @@
 import { html, css } from 'lit';
 import { JRPCClient } from '@flatmax/jrpc-oo/jrpc-client.js';
+import { AudioManager } from './AudioManager.js';
+import { PlayerUI } from './PlayerUI.js';
 import '@material/web/button/filled-button.js';
 import '@material/web/iconbutton/icon-button.js';
 import '@material/web/icon/icon.js';
@@ -165,62 +167,51 @@ export class Player extends JRPCClient {
     this.duration = 0;
     this.direction = 1;
     this.connected = false;
-    this.windowSize = 4096; // Default window size
+    this.windowSize = 4096;
     
-    this.audioContext = null;
-    this.audioWorkletNode = null;
+    this.audioManager = new AudioManager();
+    this.setupAudioManagerCallbacks();
+  }
+
+  setupAudioManagerCallbacks() {
+    this.audioManager.onProgressUpdate = (position) => {
+      this.currentTime = position;
+      this.requestUpdate();
+    };
+
+    this.audioManager.onDurationUpdate = (duration) => {
+      this.duration = duration;
+      this.requestUpdate();
+    };
+
+    this.audioManager.onPlayStateChange = (isPlaying) => {
+      this.isPlaying = isPlaying;
+      this.requestUpdate();
+    };
+
+    this.audioManager.onWindowSizeChange = (windowSize) => {
+      this.windowSize = windowSize;
+      this.requestUpdate();
+    };
   }
 
   async connectedCallback() {
     super.connectedCallback();
     this.addClass(this, 'Player');
-    await this.initAudioContext();
+    await this.initAudio();
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
-    this.cleanup();
+    this.audioManager.cleanup();
   }
 
-  async initAudioContext() {
+  async initAudio() {
     try {
-      this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      await this.audioContext.audioWorklet.addModule('/audio-processor.js');
-      this.audioWorkletNode = new AudioWorkletNode(this.audioContext, 'block-audio-processor');
-      this.audioWorkletNode.connect(this.audioContext.destination);
-      
-      this.audioWorkletNode.port.onmessage = (e) => {
-        const { type, position, duration, windowSize } = e.data;
-        
-        switch (type) {
-          case 'loaded':
-            this.duration = duration;
-            this.requestUpdate();
-            break;
-            
-          case 'progress':
-            this.currentTime = position;
-            this.requestUpdate();
-            break;
-            
-          case 'ended':
-            this.isPlaying = false;
-            this.requestUpdate();
-            break;
-            
-          case 'windowSizeChanged':
-            this.windowSize = windowSize;
-            console.log('Window size changed to:', windowSize);
-            this.requestUpdate();
-            break;
-        }
-      };
-      
-      // Set initial window size
-      this.setWindowSize(this.windowSize);
+      await this.audioManager.initialize();
     } catch (error) {
-      console.error('Error initializing audio context:', error);
-      this.error = 'Failed to initialize audio system';
+      console.error('Error initializing audio:', error);
+      this.error = error.message;
     }
   }
 
@@ -234,7 +225,7 @@ export class Player extends JRPCClient {
     console.log('Player: Remote disconnected:', uuid);
     this.connected = false;
     this.error = 'Disconnected from server';
-    this.stop();
+    this.audioManager.stop();
     this.requestUpdate();
   }
 
@@ -249,7 +240,7 @@ export class Player extends JRPCClient {
       return;
     }
 
-    this.stop();
+    this.audioManager.stop();
     this.currentTrack = track;
     this.isLoading = true;
     this.error = null;
@@ -264,19 +255,7 @@ export class Player extends JRPCClient {
         throw new Error(data.error || 'Failed to load audio data');
       }
 
-      const audioData = this._base64ToArrayBuffer(data.audioData);
-      const audioBuffer = await this.audioContext.decodeAudioData(audioData);
-      
-      const channelData = [];
-      for (let i = 0; i < audioBuffer.numberOfChannels; i++) {
-        channelData.push(audioBuffer.getChannelData(i));
-      }
-      
-      this.audioWorkletNode.port.postMessage({
-        type: 'load',
-        data: { audioData: channelData }
-      });
-      
+      await this.audioManager.loadAudioData(data.audioData);
       console.log('Track loaded successfully');
       
     } catch (error) {
@@ -287,87 +266,6 @@ export class Player extends JRPCClient {
     }
   }
 
-  play() {
-    if (!this.currentTrack || this.isPlaying) return;
-    
-    if (this.audioContext.state === 'suspended') {
-      this.audioContext.resume();
-    }
-    
-    this.audioWorkletNode.port.postMessage({ type: 'play' });
-    this.isPlaying = true;
-  }
-
-  pause() {
-    if (!this.isPlaying) return;
-    
-    this.audioWorkletNode.port.postMessage({ type: 'pause' });
-    this.isPlaying = false;
-  }
-
-  stop() {
-    this.audioWorkletNode?.port.postMessage({ type: 'stop' });
-    this.isPlaying = false;
-    this.currentTime = 0;
-  }
-
-  togglePlayPause() {
-    if (this.isPlaying) {
-      this.pause();
-    } else {
-      this.play();
-    }
-  }
-
-  toggleDirection() {
-    this.direction = this.direction === 1 ? -1 : 1;
-    this.audioWorkletNode.port.postMessage({ 
-      type: 'setDirection', 
-      data: { direction: this.direction } 
-    });
-  }
-
-  syncWindow() {
-    if (!this.currentTrack) return;
-    
-    this.audioWorkletNode.port.postMessage({
-      type: 'syncWindow'
-    });
-    
-    console.log('Window synced to current position');
-  }
-
-  setWindowSize(size) {
-    if (!this.audioWorkletNode) return;
-    
-    const minWindowSize = 128;
-    const maxWindowSize = this.audioContext ? Math.floor(10 * this.audioContext.sampleRate) : 480000;
-    const clampedSize = Math.max(minWindowSize, Math.min(maxWindowSize, size));
-    
-    this.audioWorkletNode.port.postMessage({
-      type: 'setWindowSize',
-      data: { windowSize: clampedSize }
-    });
-  }
-
-  handleWindowSizeChange(e) {
-    const value = parseInt(e.target.value);
-    this.windowSize = value;
-    this.setWindowSize(value);
-  }
-
-  multiplyWindowSize() {
-    const newSize = this.windowSize * 2;
-    this.windowSize = newSize;
-    this.setWindowSize(newSize);
-  }
-
-  divideWindowSize() {
-    const newSize = Math.floor(this.windowSize / 2);
-    this.windowSize = newSize;
-    this.setWindowSize(newSize);
-  }
-
   handleProgressClick(e) {
     if (!this.duration) return;
     
@@ -376,23 +274,25 @@ export class Player extends JRPCClient {
     const percent = x / rect.width;
     const position = percent * this.duration;
     
-    this.audioWorkletNode.port.postMessage({ 
-      type: 'seek', 
-      data: { position } 
-    });
-    this.currentTime = position;
+    this.audioManager.seek(position);
   }
 
-  cleanup() {
-    this.stop();
-    if (this.audioWorkletNode) {
-      this.audioWorkletNode.disconnect();
-      this.audioWorkletNode = null;
-    }
-    if (this.audioContext) {
-      this.audioContext.close();
-      this.audioContext = null;
-    }
+  handleWindowSizeChange(e) {
+    const value = parseInt(e.target.value);
+    this.windowSize = value;
+    this.audioManager.setWindowSize(value);
+  }
+
+  multiplyWindowSize() {
+    const newSize = this.windowSize * 2;
+    this.windowSize = newSize;
+    this.audioManager.setWindowSize(newSize);
+  }
+
+  divideWindowSize() {
+    const newSize = Math.floor(this.windowSize / 2);
+    this.windowSize = newSize;
+    this.audioManager.setWindowSize(newSize);
   }
 
   extractResponseData(response) {
@@ -401,129 +301,45 @@ export class Player extends JRPCClient {
     return response[firstUuid];
   }
 
-  _base64ToArrayBuffer(base64) {
-    const binaryString = atob(base64);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    return bytes.buffer;
-  }
-
-  formatTime(seconds) {
-    if (!seconds || isNaN(seconds)) return '0:00';
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  }
-
-  formatWindowSize(frames) {
-    if (!this.audioContext) return `${frames} frames`;
-    const sampleRate = this.audioContext.sampleRate;
-    const seconds = frames / sampleRate;
-    if (seconds < 1) {
-      return `${frames} frames (${(seconds * 1000).toFixed(1)} ms)`;
-    } else {
-      return `${frames} frames (${seconds.toFixed(2)} s)`;
-    }
-  }
-
   render() {
     if (!this.currentTrack) {
-      return html`
-        <div class="player-container">
-          <div class="no-track">
-            <md-icon>music_note</md-icon>
-            <p>No track selected. Click a track to play.</p>
-          </div>
-        </div>
-      `;
+      return PlayerUI.renderNoTrack();
     }
-
-    const common = this.currentTrack.metadata?.common || {};
-    const progress = this.duration > 0 ? (this.currentTime / this.duration) * 100 : 0;
-    
-    // Calculate min and max window size
-    const minWindowSize = 128;
-    const maxWindowSize = this.audioContext ? Math.floor(10 * this.audioContext.sampleRate) : 480000;
 
     return html`
       <div class="player-container">
-        ${this.error ? html`
-          <div class="error">
-            <md-icon>error</md-icon>
-            <span>${this.error}</span>
-          </div>
-        ` : ''}
+        ${this.error ? PlayerUI.renderError(this.error) : ''}
 
-        <div class="track-info">
-          <h3 class="track-title">${common.title || this.currentTrack.fileName}</h3>
-          ${common.artist ? html`<p class="track-artist">${common.artist}</p>` : ''}
-        </div>
+        ${PlayerUI.renderTrackInfo(this.currentTrack)}
 
-        ${this.isLoading ? html`
-          <div class="loading">
-            <md-linear-progress indeterminate></md-linear-progress>
-            <p>Loading track...</p>
-          </div>
-        ` : html`
-          <div class="progress-container">
-            <div class="progress-bar" @click=${this.handleProgressClick}>
-              <div class="progress-fill" style="width: ${progress}%"></div>
-            </div>
-            <div class="time-display">
-              <span>${this.formatTime(this.currentTime)}</span>
-              <span>${this.formatTime(this.duration)}</span>
-            </div>
-          </div>
+        ${this.isLoading ? PlayerUI.renderLoading() : html`
+          ${PlayerUI.renderProgressBar(
+            this.currentTime,
+            this.duration,
+            (e) => this.handleProgressClick(e)
+          )}
 
-          <div class="controls">
-            <md-icon-button @click=${this.stop}>
-              <md-icon>stop</md-icon>
-            </md-icon-button>
+          ${PlayerUI.renderControls(
+            this.isPlaying,
+            this.direction,
+            () => this.audioManager.stop(),
+            () => this.audioManager.togglePlayPause(),
+            () => {
+              this.audioManager.toggleDirection();
+              this.direction = this.audioManager.direction;
+            },
+            () => this.audioManager.syncWindow()
+          )}
 
-            <md-icon-button @click=${this.togglePlayPause}>
-              <md-icon>${this.isPlaying ? 'pause' : 'play_arrow'}</md-icon>
-            </md-icon-button>
-
-            <md-icon-button @click=${this.toggleDirection}>
-              <md-icon>${this.direction === 1 ? 'fast_forward' : 'fast_rewind'}</md-icon>
-            </md-icon-button>
-
-            <md-icon-button @click=${this.syncWindow} title="Sync window to current position">
-              <md-icon>sync</md-icon>
-            </md-icon-button>
-
-            <span class="direction-indicator">
-              ${this.direction === 1 ? 'Forward' : 'Reverse'}
-            </span>
-          </div>
-
-          <div class="window-size-control">
-            <div class="window-size-label">
-              <span>Window Size (N)</span>
-              <span class="window-size-value">${this.formatWindowSize(this.windowSize)}</span>
-            </div>
-            <div class="window-size-controls">
-              <input
-                type="range"
-                class="window-size-slider"
-                min="${minWindowSize}"
-                max="${maxWindowSize}"
-                step="128"
-                .value="${this.windowSize}"
-                @input=${this.handleWindowSizeChange}
-              />
-              <div class="window-size-buttons">
-                <md-icon-button @click=${this.divideWindowSize} title="Divide window size by 2">
-                  <md-icon>exposure_neg_1</md-icon>
-                </md-icon-button>
-                <md-icon-button @click=${this.multiplyWindowSize} title="Multiply window size by 2">
-                  <md-icon>exposure_plus_1</md-icon>
-                </md-icon-button>
-              </div>
-            </div>
-          </div>
+          ${PlayerUI.renderWindowSizeControl(
+            this.windowSize,
+            this.audioManager.getMinWindowSize(),
+            this.audioManager.getMaxWindowSize(),
+            this.audioManager.audioContext,
+            (e) => this.handleWindowSizeChange(e),
+            () => this.divideWindowSize(),
+            () => this.multiplyWindowSize()
+          )}
         `}
       </div>
     `;
