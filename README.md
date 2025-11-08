@@ -22,6 +22,7 @@ Clone the repository to your local machine.
 
 From the project root directory, run:
 
+    cd node
     npm install
 
 ### Step 3: Install webapp dependencies
