@@ -60,6 +60,12 @@ class BlockAudioProcessor extends AudioWorkletProcessor {
           // Store the pending window size change instead of applying immediately
           this.pendingWindowSize = newSize;
           break;
+          
+        case 'syncWindow':
+          // Force reload of window at current position
+          this.windowBuffer = null;
+          this.windowPosition = 0;
+          break;
       }
     };
   }

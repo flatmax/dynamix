@@ -116,9 +116,20 @@ export class Player extends JRPCClient {
       color: var(--md-sys-color-primary);
     }
 
-    .window-size-slider {
-      width: 100%;
+    .window-size-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
       margin-top: 8px;
+    }
+
+    .window-size-slider {
+      flex: 1;
+    }
+
+    .window-size-buttons {
+      display: flex;
+      gap: 4px;
     }
 
     .error {
@@ -316,12 +327,26 @@ export class Player extends JRPCClient {
     });
   }
 
+  syncWindow() {
+    if (!this.currentTrack) return;
+    
+    this.audioWorkletNode.port.postMessage({
+      type: 'syncWindow'
+    });
+    
+    console.log('Window synced to current position');
+  }
+
   setWindowSize(size) {
     if (!this.audioWorkletNode) return;
     
+    const minWindowSize = 128;
+    const maxWindowSize = this.audioContext ? Math.floor(10 * this.audioContext.sampleRate) : 480000;
+    const clampedSize = Math.max(minWindowSize, Math.min(maxWindowSize, size));
+    
     this.audioWorkletNode.port.postMessage({
       type: 'setWindowSize',
-      data: { windowSize: size }
+      data: { windowSize: clampedSize }
     });
   }
 
@@ -329,6 +354,18 @@ export class Player extends JRPCClient {
     const value = parseInt(e.target.value);
     this.windowSize = value;
     this.setWindowSize(value);
+  }
+
+  multiplyWindowSize() {
+    const newSize = this.windowSize * 2;
+    this.windowSize = newSize;
+    this.setWindowSize(newSize);
+  }
+
+  divideWindowSize() {
+    const newSize = Math.floor(this.windowSize / 2);
+    this.windowSize = newSize;
+    this.setWindowSize(newSize);
   }
 
   handleProgressClick(e) {
@@ -453,6 +490,10 @@ export class Player extends JRPCClient {
               <md-icon>${this.direction === 1 ? 'fast_forward' : 'fast_rewind'}</md-icon>
             </md-icon-button>
 
+            <md-icon-button @click=${this.syncWindow} title="Sync window to current position">
+              <md-icon>sync</md-icon>
+            </md-icon-button>
+
             <span class="direction-indicator">
               ${this.direction === 1 ? 'Forward' : 'Reverse'}
             </span>
@@ -463,15 +504,25 @@ export class Player extends JRPCClient {
               <span>Window Size (N)</span>
               <span class="window-size-value">${this.formatWindowSize(this.windowSize)}</span>
             </div>
-            <input
-              type="range"
-              class="window-size-slider"
-              min="${minWindowSize}"
-              max="${maxWindowSize}"
-              step="128"
-              .value="${this.windowSize}"
-              @input=${this.handleWindowSizeChange}
-            />
+            <div class="window-size-controls">
+              <input
+                type="range"
+                class="window-size-slider"
+                min="${minWindowSize}"
+                max="${maxWindowSize}"
+                step="128"
+                .value="${this.windowSize}"
+                @input=${this.handleWindowSizeChange}
+              />
+              <div class="window-size-buttons">
+                <md-icon-button @click=${this.divideWindowSize} title="Divide window size by 2">
+                  <md-icon>exposure_neg_1</md-icon>
+                </md-icon-button>
+                <md-icon-button @click=${this.multiplyWindowSize} title="Multiply window size by 2">
+                  <md-icon>exposure_plus_1</md-icon>
+                </md-icon-button>
+              </div>
+            </div>
           </div>
         `}
       </div>
