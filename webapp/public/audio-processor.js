@@ -83,7 +83,7 @@ class BlockAudioProcessor extends AudioWorkletProcessor {
       const windowChannel = this.windowBuffer[ch];
       
       if (this.direction === 1) {
-        // Forward direction - use efficient subarray copy
+        // Forward direction - copy window starting at current position
         const startPos = this.position;
         const endPos = Math.min(startPos + this.windowSize, audioLength);
         const copyLength = endPos - startPos;
@@ -97,15 +97,19 @@ class BlockAudioProcessor extends AudioWorkletProcessor {
           windowChannel.fill(0, copyLength);
         }
       } else {
-        // Reverse direction - need to copy and reverse
-        for (let i = 0; i < this.windowSize; i++) {
-          const readPos = this.position + (i * this.direction);
-          
-          if (readPos >= 0 && readPos < audioLength) {
-            windowChannel[i] = inputChannel[readPos];
-          } else {
-            windowChannel[i] = 0;
-          }
+        // Reverse direction - copy window BEFORE current position, but keep samples in forward order
+        // Position points to the END of the window we want to load
+        const endPos = this.position;
+        const startPos = Math.max(0, endPos - this.windowSize);
+        const copyLength = endPos - startPos;
+        
+        if (copyLength > 0) {
+          windowChannel.set(inputChannel.subarray(startPos, endPos), 0);
+        }
+        
+        // Fill remaining with zeros if we hit the beginning
+        if (copyLength < this.windowSize) {
+          windowChannel.fill(0, copyLength);
         }
       }
     }
@@ -115,7 +119,10 @@ class BlockAudioProcessor extends AudioWorkletProcessor {
     this.windowPosition = 0;
     
     // Check if we've reached the end
-    if (this.position >= audioLength || this.position < 0) {
+    if (this.direction === 1 && this.position >= audioLength) {
+      return false;
+    }
+    if (this.direction === -1 && this.position < 0) {
       return false;
     }
     
