@@ -26,8 +26,8 @@ Original-site:  ftp://ftp.cse.unsw.edu.au /pub/users/flatmax
                 144kB dynamic.0.0.5.tar.gz
 Platforms:      Linux
 Copying-policy: Shareware
-```
 End
+```
 
 ## Overview
 
