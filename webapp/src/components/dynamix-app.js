@@ -47,6 +47,14 @@ export class DynamixApp extends LitElement {
       margin-bottom: 2rem;
     }
 
+    .tap-section {
+      background: var(--md-sys-color-surface);
+      border-radius: 28px;
+      padding: 2rem;
+      box-shadow: var(--md-sys-elevation-level2);
+      margin-bottom: 2rem;
+    }
+
     .tracks-section {
       background: var(--md-sys-color-surface);
       border-radius: 28px;
@@ -104,6 +112,10 @@ export class DynamixApp extends LitElement {
 
         <div class="player-section">
           <player-component></player-component>
+        </div>
+
+        <div class="tap-section">
+          <tap-time></tap-time>
         </div>
 
         <div class="tracks-section">
