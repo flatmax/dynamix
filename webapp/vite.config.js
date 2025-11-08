@@ -16,5 +16,6 @@ export default defineConfig({
   },
   optimizeDeps: {
     exclude: ['@flatmax/jrpc-oo']
-  }
+  },
+  publicDir: 'public'
 });

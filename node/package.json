@@ -2,11 +2,11 @@
   "name": "dynamix2025-backend",
   "version": "1.0.0",
   "description": "Backend for dynamix2025 application",
-  "main": "server.js",
+  "main": "dynamix2025.js",
   "type": "module",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js",
+    "start": "node dynamix2025.js",
+    "dev": "node --watch dynamix2025.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [

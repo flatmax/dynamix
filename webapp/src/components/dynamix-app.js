@@ -39,6 +39,14 @@ export class DynamixApp extends LitElement {
       font-weight: 400;
     }
 
+    .player-section {
+      background: var(--md-sys-color-surface);
+      border-radius: 28px;
+      padding: 2rem;
+      box-shadow: var(--md-sys-elevation-level2);
+      margin-bottom: 2rem;
+    }
+
     .tracks-section {
       background: var(--md-sys-color-surface);
       border-radius: 28px;
@@ -55,20 +63,35 @@ export class DynamixApp extends LitElement {
 
   firstUpdated() {
     this.setupConnection();
+    this.setupEventListeners();
   }
 
   setupConnection() {
     const tracksComponent = this.shadowRoot.querySelector('tracks-component');
-    if (tracksComponent) {
+    const playerComponent = this.shadowRoot.querySelector('player-component');
+    
+    if (tracksComponent && playerComponent) {
       const host = 'localhost';
       const port = 9000;
       const useSSL = false;
       
       const protocol = useSSL ? 'wss' : 'ws';
-      tracksComponent.serverURI = `${protocol}://${host}:${port}`;
+      const serverURI = `${protocol}://${host}:${port}`;
       
-      console.log(`Setting server URI to: ${tracksComponent.serverURI}`);
+      tracksComponent.serverURI = serverURI;
+      playerComponent.serverURI = serverURI;
+      
+      console.log(`Setting server URI to: ${serverURI}`);
     }
+  }
+
+  setupEventListeners() {
+    this.addEventListener('track-selected', (e) => {
+      const playerComponent = this.shadowRoot.querySelector('player-component');
+      if (playerComponent) {
+        playerComponent.loadTrack(e.detail.track);
+      }
+    });
   }
 
   render() {
@@ -78,6 +101,10 @@ export class DynamixApp extends LitElement {
           <h1>${this.title}</h1>
           <p class="subtitle">Audio Track Playback</p>
         </header>
+
+        <div class="player-section">
+          <player-component></player-component>
+        </div>
 
         <div class="tracks-section">
           <tracks-component></tracks-component>

@@ -271,6 +271,17 @@ export class Tracks extends JRPCClient {
     }
   }
 
+  handleTrackClick(track) {
+    if (track.error) return;
+    
+    const event = new CustomEvent('track-selected', {
+      detail: { track },
+      bubbles: true,
+      composed: true
+    });
+    this.dispatchEvent(event);
+  }
+
   extractResponseData(response) {
     if (!response) return null;
     const firstUuid = Object.keys(response)[0];
@@ -307,7 +318,7 @@ export class Tracks extends JRPCClient {
     const format = track.metadata?.format || {};
 
     return html`
-      <div class="track-item">
+      <div class="track-item" @click=${() => this.handleTrackClick(track)}>
         <div class="track-title">${common.title || track.fileName}</div>
         ${common.artist ? html`<div class="track-artist">${common.artist}</div>` : ''}
         ${common.album ? html`<div class="track-album">${common.album}</div>` : ''}

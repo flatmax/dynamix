@@ -95,6 +95,23 @@ class MusicMetadata {
     }
   }
 
+  // Get raw audio data for playback
+  async getAudioData(filePath) {
+    try {
+      const validatedPath = this._validatePath(filePath);
+      const audioData = await fs.promises.readFile(validatedPath);
+      return {
+        success: true,
+        audioData: audioData.toString('base64')
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
   // Recursively parse a directory and return all track metadata
   async parseDirectory(directoryPath, options = {}) {
     try {
